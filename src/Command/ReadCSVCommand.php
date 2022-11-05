@@ -43,14 +43,7 @@ class ReadCSVCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        
         $source = $input->getOption("source");
-        $array=explode('\\',$source);
-        $name =$array[count($array)-1];
-        if(!str_contains($name,'.csv')){
-            echo 'Format not suported';
-            return;
-        }
         $json_check = $input->getOption("json") == "true";
         $data = $this->csv_to_entity($source);
         if ($json_check) {
@@ -80,18 +73,36 @@ class ReadCSVCommand extends Command
             $slug = implode("-", $slug);
 
             $readCsv = new ReadCSV();
+            $readCsv2 = new ReadCSV();
 
             $readCsv->setSku(intval($result["sku"]));
             $readCsv->setTitle($result["title"]);
             $readCsv->setIsEnabled(intval($result["is_enabled"]) == 0 ? "Disable" : "Enable" );
             $readCsv->setPrice(round(floatval($result["price"]), 1));
             $readCsv->setCurrency($result["currency"]);
-            $readCsv->setDescription($result["description"]);
+//            echo str_replace("<br/>", "\n", $result["description"]);
             $readCsv->setCreatedAt($date->format("l, d-M-Y G:i:s T"));
             $readCsv->setSlug($slug);
             $price_curr = number_format($readCsv->getPrice(), 2, ',', ' ')."".$readCsv->getCurrency();
             $readCsv->setPriceCurr($price_curr);
+
+            if (str_contains($result["description"], "<br/>")) {
+                $desc = explode("<br/>", $result["description"])[0];
+                $desc2 = explode("<br/>", $result["description"])[1];
+
+                $readCsv->setDescription($desc);
+                $readCsv2->setDescription($desc2);
+            } elseif(str_contains($result["description"], "\\r")) {;
+                $desc = explode("\\r", $result["description"])[0];
+                $desc2 = explode("\\r", $result["description"])[1];
+
+                $readCsv->setDescription($desc);
+                $readCsv2->setDescription($desc2);
+            } else {
+                $readCsv->setDescription($result["description"]);
+            }
             $array[] = $readCsv;
+            $array[] = $readCsv2;
         }
 
         return $array;
